@@ -216,12 +216,14 @@ var shellCmd = &cobra.Command{
 			if len(args[1]) == 0 {
 				return fmt.Errorf("no SQL command to execute")
 			}
+			checkArchiveStatus(db)
 			if args[1] == ".dump" {
 				return dump(getDbURLForDump(dbUrl), authToken)
 			}
 			return runShellLine(dbID, shellConfig, args[1])
 		}
 
+		checkArchiveStatus(db)
 		if nonInteractive {
 			// TODO: read chunks when interactive transactions are available
 			b, err := io.ReadAll(os.Stdin)
@@ -234,6 +236,11 @@ var shellCmd = &cobra.Command{
 	},
 }
 
+func checkArchiveStatus(db *turso.Database) {
+	if db != nil && db.Sleeping {
+		fmt.Printf("*Your DB might be archived. Please  run `turso group unarchive %s` to unarchive it*\n", db.Group)
+	}
+}
 func runShell(dbID string, config shell.ShellConfig) error {
 	err := shell.RunShell(config)
 	if isAuthError(err) && dbID != "" {
